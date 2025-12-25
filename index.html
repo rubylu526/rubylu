@@ -1,0 +1,457 @@
+import React, { useState, useMemo } from 'react';
+import { Search, Plus, Filter, Play, Clock, Users, ShieldAlert, BookOpen, ChevronRight, X, Activity, Youtube, Tag } from 'lucide-react';
+
+// --- 模擬教案資料庫數據 ---
+const initialLessonPlans = [
+  {
+    id: 1,
+    title: "[銀髮族] 身腦適能系列15─貓抓老鼠",
+    category: "身腦適能",
+    difficulty: "中等",
+    duration: "15-20 分鐘",
+    participants: "團體 (5人以上)",
+    instructor: "趙青鴻 物理治療師",
+    props: ["大布偶 (貓)", "小布偶 (老鼠)", "音樂播放設備"],
+    youtubeId: "wOAZdIFLuA0", // 這是您提供的影片 ID
+    description: "透過音樂與布偶的傳遞遊戲，訓練長者的聽覺反應能力、手眼協調以及團體互動樂趣。遊戲分為初階與進階版，增加認知挑戰。",
+    steps: [
+      "【準備】學員圍坐成一圈，準備一隻大布偶(貓)和一隻小布偶(老鼠)。",
+      "【初階版】音樂播放時，單向傳遞布偶。音樂停止時，拿到布偶的人得分（或是進行簡單處罰/表演）。",
+      "【進階版】同時傳遞貓與老鼠。貓要追老鼠，若音樂停止時貓追到老鼠（在大布偶旁邊），則貓獲勝。",
+      "【變體】帶領者可隨時喊「迴轉」或「倒追」，增加反應難度。"
+    ],
+    safety: [
+      "傳遞物品時動作不宜過大，避免扭傷腰部。",
+      "若使用比賽制，需注意長者情緒，避免過度激動。",
+      "確認椅子穩固，避免長者為了傳遞物品而滑落。"
+    ],
+    tags: ["反應訓練", "團體互動", "坐姿運動"]
+  },
+  {
+    id: 2,
+    title: "上肢肌力強化 - 彈力帶運動",
+    category: "肌力訓練",
+    difficulty: "簡單",
+    duration: "20 分鐘",
+    participants: "個人或團體",
+    instructor: "王小明 職能治療師",
+    props: ["彈力帶 (不同阻力)", "有靠背的椅子"],
+    youtubeId: "dummy_id_1", // 模擬 ID
+    description: "利用彈力帶進行上肢肌力強化，預防肌少症，適合輪椅使用者或站立不便的長者。",
+    steps: [
+      "雙手握住彈力帶兩端，寬度與肩同寬。",
+      "配合呼吸，雙手向外拉開彈力帶，感受背部肌肉收縮。",
+      "緩慢放回，重複 10-12 次為一組。"
+    ],
+    safety: [
+      "確認彈力帶無破損，避免斷裂彈傷。",
+      "動作需緩慢，避免反作用力造成拉傷。"
+    ],
+    tags: ["肌少症預防", "居家運動", "上肢訓練"]
+  },
+  {
+    id: 3,
+    title: "懷舊金曲律動 - 四季紅",
+    category: "音樂律動",
+    difficulty: "簡單",
+    duration: "30 分鐘",
+    participants: "團體",
+    instructor: "李美華 音樂治療師",
+    props: ["絲巾", "鈴鼓", "懷舊音樂"],
+    youtubeId: "dummy_id_2", // 模擬 ID
+    description: "播放長者熟悉的經典歌曲，搭配絲巾揮舞與簡單肢體律動，促進情緒愉悅與關節活動。",
+    steps: [
+      "播放音樂，先進行深呼吸暖身。",
+      "跟隨歌詞意境揮動絲巾（如：花開、微風）。",
+      "間奏時進行拍手或踩踏動作。"
+    ],
+    safety: [
+      "注意地板防滑。",
+      "活動空間需寬敞，避免揮舞絲巾時互相干擾。"
+    ],
+    tags: ["懷舊治療", "情緒舒緩", "有氧運動"]
+  },
+  {
+    id: 4,
+    title: "認知數字大戰",
+    category: "認知訓練",
+    difficulty: "困難",
+    duration: "15 分鐘",
+    participants: "雙人分組",
+    instructor: "陳大衛 心理師",
+    props: ["數字撲克牌 (1-10)"],
+    youtubeId: "dummy_id_3", // 模擬 ID
+    description: "透過數字比大小與簡單加減法，刺激長者的大腦運算能力與工作記憶。",
+    steps: [
+      "兩人一組，各持一副牌。",
+      "同時出一張牌，數值大者獲勝（或喊出兩數之和）。",
+      "進階：依照顏色決定加法或減法。"
+    ],
+    safety: [
+      "避免過度競爭造成心理壓力。",
+      "適時給予提示，建立成就感。"
+    ],
+    tags: ["算術能力", "專注力", "社交互動"]
+  }
+];
+
+// --- 元件：分類標籤 ---
+const CategoryBadge = ({ category }) => {
+  const colors = {
+    "身腦適能": "bg-blue-100 text-blue-800 border-blue-200",
+    "肌力訓練": "bg-green-100 text-green-800 border-green-200",
+    "音樂律動": "bg-purple-100 text-purple-800 border-purple-200",
+    "認知訓練": "bg-orange-100 text-orange-800 border-orange-200",
+    "default": "bg-gray-100 text-gray-800 border-gray-200"
+  };
+  return (
+    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${colors[category] || colors['default']}`}>
+      {category}
+    </span>
+  );
+};
+
+// --- 元件：難度標籤 ---
+const DifficultyBadge = ({ level }) => {
+  const colors = {
+    "簡單": "text-green-600 bg-green-50",
+    "中等": "text-yellow-600 bg-yellow-50",
+    "困難": "text-red-600 bg-red-50",
+  };
+  return (
+    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${colors[level] || colors['簡單']}`}>
+      {level}
+    </span>
+  );
+};
+
+export default function LessonPlanDatabase() {
+  const [plans, setPlans] = useState(initialLessonPlans);
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("全部");
+  const [isAdding, setIsAdding] = useState(false);
+
+  // 提取所有分類
+  const categories = ["全部", ...new Set(plans.map(p => p.category))];
+
+  // 篩選邏輯
+  const filteredPlans = useMemo(() => {
+    return plans.filter(plan => {
+      const matchesSearch = plan.title.includes(searchTerm) || 
+                            plan.description.includes(searchTerm) ||
+                            plan.tags.some(tag => tag.includes(searchTerm));
+      const matchesCategory = selectedCategory === "全部" || plan.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [plans, searchTerm, selectedCategory]);
+
+  return (
+    <div className="flex h-screen bg-slate-50 text-slate-800 font-sans overflow-hidden">
+      {/* 側邊導覽列 */}
+      <aside className="w-64 bg-white border-r border-slate-200 flex-col hidden md:flex shadow-sm z-10">
+        <div className="p-6 border-b border-slate-100">
+          <div className="flex items-center gap-2 text-indigo-600 font-bold text-xl">
+            <Activity className="h-7 w-7" />
+            <span>樂齡教案庫</span>
+          </div>
+          <p className="text-xs text-slate-400 mt-2">預防及延緩失能照護方案</p>
+        </div>
+        
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          <div className="px-3 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+            教案分類
+          </div>
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                selectedCategory === cat 
+                  ? 'bg-indigo-50 text-indigo-700 shadow-sm' 
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </nav>
+
+        <div className="p-4 border-t border-slate-100">
+          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-4 text-white shadow-lg">
+            <p className="font-bold text-sm mb-1">今日小提示</p>
+            <p className="text-xs opacity-90 leading-relaxed">
+              帶領活動前，請務必確認場地是否有障礙物，確保長者安全。
+            </p>
+          </div>
+        </div>
+      </aside>
+
+      {/* 主內容區 */}
+      <main className="flex-1 flex flex-col min-w-0">
+        {/* 頂部工具列 */}
+        <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between gap-4 shadow-sm z-10">
+          <div className="flex items-center flex-1 max-w-lg bg-slate-100 rounded-full px-4 py-2.5 focus-within:ring-2 focus-within:ring-indigo-200 transition-all">
+            <Search className="h-5 w-5 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="搜尋教案名稱、關鍵字..." 
+              className="bg-transparent border-none focus:outline-none ml-2 w-full text-sm text-slate-700 placeholder:text-slate-400"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <button 
+            onClick={() => setIsAdding(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-full text-sm font-medium flex items-center gap-2 transition-all shadow-md hover:shadow-lg active:scale-95"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">新增教案</span>
+          </button>
+        </header>
+
+        {/* 內容滾動區 */}
+        <div className="flex-1 overflow-y-auto p-6 sm:p-8 custom-scrollbar">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-slate-800">
+              {selectedCategory === "全部" ? "所有教案" : `${selectedCategory}`}
+            </h2>
+            <span className="text-sm font-medium text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">
+              共 {filteredPlans.length} 筆資料
+            </span>
+          </div>
+
+          {/* 教案 Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredPlans.map(plan => (
+              <div 
+                key={plan.id}
+                onClick={() => setSelectedPlan(plan)}
+                className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col h-full overflow-hidden"
+              >
+                {/* 縮圖區塊 (模擬) */}
+                <div className="relative h-48 bg-slate-200 overflow-hidden">
+                  <img 
+                    src={`https://img.youtube.com/vi/${plan.youtubeId}/hqdefault.jpg`} 
+                    alt={plan.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    onError={(e) => {
+                       e.target.src = "/api/placeholder/640/360"; // Fallback if dummy ID
+                       e.target.style.opacity = 0.5;
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors"></div>
+                  <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-2 py-1 rounded flex items-center gap-1 backdrop-blur-sm">
+                    <Play className="h-3 w-3 fill-current" /> 影片教學
+                  </div>
+                  <div className="absolute top-3 left-3">
+                    <CategoryBadge category={plan.category} />
+                  </div>
+                </div>
+                
+                <div className="p-5 flex-1 flex flex-col">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-lg font-bold text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors line-clamp-2">
+                      {plan.title}
+                    </h3>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 text-xs text-slate-500 mb-4 mt-1">
+                     <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {plan.duration}</span>
+                     <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {plan.participants}</span>
+                  </div>
+
+                  <p className="text-slate-600 text-sm line-clamp-2 mb-4 flex-1">
+                    {plan.description}
+                  </p>
+                  
+                  <div className="border-t border-slate-100 pt-3 mt-auto flex justify-between items-center">
+                    <DifficultyBadge level={plan.difficulty} />
+                    <span className="text-xs font-medium text-slate-400 group-hover:text-indigo-500 flex items-center gap-1 transition-colors">
+                      查看詳情 <ChevronRight className="h-3 w-3" />
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </main>
+
+      {/* 教案詳情 Modal (含影片播放) */}
+      {selectedPlan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            
+            {/* Modal Header */}
+            <div className="flex justify-between items-center p-5 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                 <h2 className="text-xl font-bold text-slate-900 truncate max-w-2xl">{selectedPlan.title}</h2>
+                 <CategoryBadge category={selectedPlan.category} />
+              </div>
+              <button 
+                onClick={() => setSelectedPlan(null)}
+                className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500 hover:text-slate-800"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              <div className="grid grid-cols-1 lg:grid-cols-3">
+                
+                {/* 左側：影片播放區 */}
+                <div className="lg:col-span-2 bg-black">
+                  <div className="aspect-video w-full relative">
+                    {/* YouTube Embed */}
+                    <iframe 
+                      width="100%" 
+                      height="100%" 
+                      src={`https://www.youtube.com/embed/${selectedPlan.youtubeId}?autoplay=1&rel=0`} 
+                      title="YouTube video player" 
+                      frameBorder="0" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                      allowFullScreen
+                      className="absolute inset-0"
+                    ></iframe>
+                  </div>
+                  
+                  <div className="p-6 bg-white">
+                    <h3 className="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
+                      <BookOpen className="h-5 w-5 text-indigo-500" />
+                      教案簡介
+                    </h3>
+                    <p className="text-slate-600 leading-relaxed text-sm lg:text-base">
+                      {selectedPlan.description}
+                    </p>
+                    
+                    <div className="mt-6 flex flex-wrap gap-2">
+                      {selectedPlan.tags.map(tag => (
+                        <span key={tag} className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium">
+                          <Tag className="h-3 w-3" /> {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 右側：詳細資訊 */}
+                <div className="p-6 bg-slate-50 border-l border-slate-100 space-y-6 lg:h-full lg:overflow-y-auto">
+                  
+                  {/* 基本資訊卡 */}
+                  <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                    <div className="flex justify-between border-b border-slate-100 pb-2">
+                       <span className="text-xs text-slate-500">設計者</span>
+                       <span className="text-sm font-medium text-slate-800">{selectedPlan.instructor}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-100 pb-2">
+                       <span className="text-xs text-slate-500">時間</span>
+                       <span className="text-sm font-medium text-slate-800">{selectedPlan.duration}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-100 pb-2">
+                       <span className="text-xs text-slate-500">適合人數</span>
+                       <span className="text-sm font-medium text-slate-800">{selectedPlan.participants}</span>
+                    </div>
+                    <div>
+                       <span className="text-xs text-slate-500 block mb-1">所需道具</span>
+                       <div className="flex flex-wrap gap-1">
+                         {selectedPlan.props.map((p, i) => (
+                           <span key={i} className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded border border-indigo-100">{p}</span>
+                         ))}
+                       </div>
+                    </div>
+                  </div>
+
+                  {/* 規則區塊 */}
+                  <div className="space-y-3">
+                    <h4 className="font-bold text-slate-800 flex items-center gap-2">
+                      <Activity className="h-4 w-4 text-indigo-500" /> 遊戲規則 / 步驟
+                    </h4>
+                    <ol className="space-y-3 relative border-l-2 border-indigo-100 ml-2 pl-4">
+                      {selectedPlan.steps.map((step, idx) => (
+                        <li key={idx} className="text-sm text-slate-700 relative">
+                          <span className="absolute -left-[21px] top-0.5 h-2.5 w-2.5 rounded-full bg-indigo-500 border-2 border-white"></span>
+                          {step}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+
+                  {/* 安全提醒區塊 */}
+                  <div className="bg-red-50 p-4 rounded-xl border border-red-100">
+                    <h4 className="font-bold text-red-800 flex items-center gap-2 mb-2 text-sm">
+                      <ShieldAlert className="h-4 w-4" /> 安全注意事項
+                    </h4>
+                    <ul className="space-y-2">
+                      {selectedPlan.safety.map((item, i) => (
+                        <li key={i} className="text-xs text-red-700 flex gap-2 leading-relaxed">
+                          <span className="block mt-1 w-1 h-1 bg-red-400 rounded-full flex-shrink-0"></span>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 新增教案 Modal (模擬) */}
+      {isAdding && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+           <div className="bg-white rounded-xl w-full max-w-lg p-6 shadow-2xl transform scale-100 transition-all">
+             <div className="flex justify-between items-center mb-6">
+               <h3 className="text-xl font-bold text-slate-900">新增教案資料</h3>
+               <button onClick={() => setIsAdding(false)} className="text-slate-400 hover:text-slate-600"><X /></button>
+             </div>
+             <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); setIsAdding(false); }}>
+               <div>
+                 <label className="block text-sm font-medium text-slate-700 mb-1">教案名稱</label>
+                 <input type="text" className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm" placeholder="例如：椅子瑜珈" />
+               </div>
+               <div>
+                 <label className="block text-sm font-medium text-slate-700 mb-1">YouTube 影片連結</label>
+                 <div className="flex items-center gap-2">
+                   <div className="bg-slate-100 p-2.5 rounded-lg border border-slate-300">
+                      <Youtube className="h-5 w-5 text-red-600" />
+                   </div>
+                   <input type="text" className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm" placeholder="貼上 YouTube 網址" />
+                 </div>
+               </div>
+               <div className="grid grid-cols-2 gap-4">
+                 <div>
+                   <label className="block text-sm font-medium text-slate-700 mb-1">分類</label>
+                   <select className="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
+                     <option>身腦適能</option>
+                     <option>肌力訓練</option>
+                     <option>音樂律動</option>
+                     <option>認知訓練</option>
+                   </select>
+                 </div>
+                 <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">難度</label>
+                    <select className="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
+                      <option>簡單</option>
+                      <option>中等</option>
+                      <option>困難</option>
+                    </select>
+                 </div>
+               </div>
+               <div>
+                 <label className="block text-sm font-medium text-slate-700 mb-1">活動簡介</label>
+                 <textarea className="w-full border border-slate-300 rounded-lg p-2.5 h-24 text-sm resize-none" placeholder="請簡述活動目標與內容..."></textarea>
+               </div>
+               <div className="flex gap-3 mt-6 pt-2">
+                 <button type="button" onClick={() => setIsAdding(false)} className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-50 transition-colors text-sm">取消</button>
+                 <button type="submit" className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-sm text-sm">確認新增</button>
+               </div>
+             </form>
+           </div>
+        </div>
+      )}
+    </div>
+  );
+}
