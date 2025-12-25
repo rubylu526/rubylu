@@ -32,9 +32,24 @@
         .animate-fade-in {
             animation: fadeIn 0.3s ease-out forwards;
         }
+        
+        /* 視覺隱藏但保留在 DOM 中，用於 BGM 播放器 */
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            border: 0;
+        }
     </style>
 </head>
 <body class="bg-slate-50 font-sans text-slate-800 overflow-hidden h-screen flex">
+
+    <!-- 背景音樂播放器容器 (隱藏) -->
+    <div id="bgm-container" class="visually-hidden"></div>
 
     <!-- 側邊欄 - 影片列表 -->
     <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-80 bg-white shadow-xl transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col">
@@ -44,9 +59,17 @@
                 <i data-lucide="book-open" class="w-6 h-6"></i>
                 <h1 class="text-xl font-bold">教案資料庫</h1>
             </div>
-            <button id="close-sidebar" class="md:hidden p-1 hover:bg-emerald-700 rounded">
-                <i data-lucide="x" class="w-6 h-6"></i>
-            </button>
+            
+            <div class="flex items-center space-x-2">
+                <!-- 電腦版 BGM 開關 -->
+                <button id="bgm-toggle-desktop" class="p-1.5 hover:bg-emerald-700 rounded-full transition-colors hidden md:block" title="背景音樂開關">
+                    <i data-lucide="music" class="w-5 h-5"></i>
+                </button>
+
+                <button id="close-sidebar" class="md:hidden p-1 hover:bg-emerald-700 rounded">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
         </div>
 
         <!-- 列表容器 -->
@@ -63,7 +86,13 @@
         
         <!-- 手機版 Header -->
         <header class="md:hidden h-14 bg-white border-b flex items-center px-4 justify-between shadow-sm z-20 shrink-0">
-            <span class="font-bold text-slate-700 truncate mr-2" id="mobile-current-title">載入中...</span>
+            <div class="flex items-center min-w-0 flex-1 mr-2">
+                 <!-- 手機版 BGM 開關 -->
+                 <button id="bgm-toggle-mobile" class="p-2 mr-2 text-emerald-600 bg-emerald-50 rounded-full" title="背景音樂開關">
+                    <i data-lucide="music" class="w-5 h-5"></i>
+                </button>
+                <span class="font-bold text-slate-700 truncate" id="mobile-current-title">載入中...</span>
+            </div>
             <button id="open-sidebar" class="p-2 -mr-2 text-slate-600">
                 <i data-lucide="menu" class="w-6 h-6"></i>
             </button>
@@ -186,6 +215,12 @@
         ];
 
         let currentVideoId = videos[0].id;
+        
+        // 背景音樂設定
+        const bgmConfig = {
+            id: 'w75I_oSyiSw', // 您的背景音樂 ID
+            isPlaying: true    // 預設開啟狀態
+        };
 
         // DOM 元素引用
         const els = {
@@ -201,7 +236,10 @@
             infoCard: document.getElementById('info-card'),
             overlay: document.getElementById('overlay'),
             openBtn: document.getElementById('open-sidebar'),
-            closeBtn: document.getElementById('close-sidebar')
+            closeBtn: document.getElementById('close-sidebar'),
+            bgmContainer: document.getElementById('bgm-container'),
+            bgmToggleDesktop: document.getElementById('bgm-toggle-desktop'),
+            bgmToggleMobile: document.getElementById('bgm-toggle-mobile')
         };
 
         // 初始化
@@ -210,12 +248,60 @@
             renderList();
             loadVideo(videos[0]);
             
+            // 初始化背景音樂
+            initBgm();
+            
             // 事件監聽
             els.openBtn.addEventListener('click', openSidebar);
             els.closeBtn.addEventListener('click', closeSidebar);
             els.overlay.addEventListener('click', closeSidebar);
+            els.bgmToggleDesktop.addEventListener('click', toggleBgm);
+            els.bgmToggleMobile.addEventListener('click', toggleBgm);
 
             // 初始化圖示
+            lucide.createIcons();
+        }
+
+        // 初始化背景音樂播放器
+        function initBgm() {
+            updateBgmState();
+        }
+
+        // 切換背景音樂
+        function toggleBgm() {
+            bgmConfig.isPlaying = !bgmConfig.isPlaying;
+            updateBgmState();
+        }
+
+        function updateBgmState() {
+            const iconName = bgmConfig.isPlaying ? 'music' : 'volume-x';
+            const opacityClass = bgmConfig.isPlaying ? 'opacity-100' : 'opacity-50';
+            const playlistParam = `&playlist=${bgmConfig.id}`; // 單一影片循環需要 playlist 參數
+
+            // 更新播放器 iframe
+            if (bgmConfig.isPlaying) {
+                // 嘗試自動播放：autoplay=1, loop=1
+                els.bgmContainer.innerHTML = `
+                    <iframe 
+                        width="100" height="100" 
+                        src="https://www.youtube.com/embed/${bgmConfig.id}?autoplay=1&loop=1${playlistParam}&playsinline=1&controls=0" 
+                        title="Background Music"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    ></iframe>
+                `;
+            } else {
+                els.bgmContainer.innerHTML = '';
+            }
+
+            // 更新按鈕狀態 (Desktop)
+            els.bgmToggleDesktop.innerHTML = `<i data-lucide="${iconName}" class="w-5 h-5"></i>`;
+            els.bgmToggleDesktop.className = `p-1.5 rounded-full transition-all duration-200 hidden md:block ${bgmConfig.isPlaying ? 'bg-emerald-500 hover:bg-emerald-400' : 'bg-emerald-700 hover:bg-emerald-600'}`;
+            
+            // 更新按鈕狀態 (Mobile)
+            els.bgmToggleMobile.innerHTML = `<i data-lucide="${iconName}" class="w-5 h-5"></i>`;
+            els.bgmToggleMobile.className = `p-2 mr-2 rounded-full transition-all duration-200 ${bgmConfig.isPlaying ? 'text-emerald-600 bg-emerald-100' : 'text-slate-400 bg-slate-100'}`;
+
+            // 重新渲染圖示
             lucide.createIcons();
         }
 
@@ -265,8 +351,8 @@
                 btn.onclick = () => {
                     currentVideoId = video.id;
                     loadVideo(video);
-                    renderList(); // 重新渲染以更新選中狀態樣式
-                    lucide.createIcons(); // 重新生成圖示 (因為 DOM 更新了)
+                    renderList(); 
+                    lucide.createIcons();
                     
                     // 手機版自動收起
                     if (window.innerWidth < 768) {
