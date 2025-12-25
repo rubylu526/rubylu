@@ -1,505 +1,315 @@
-import React, { useState, useMemo } from 'react';
-import { Search, Plus, Filter, Play, Clock, Users, ShieldAlert, BookOpen, ChevronRight, X, Activity, Youtube, Tag, Home, Heart } from 'lucide-react';
-
-// --- 更新後的教案資料庫數據 (根據您提供的影片) ---
-const initialLessonPlans = [
-  {
-    id: 1,
-    title: "吞嚥健康操 (台語版)",
-    category: "口腔保健",
-    difficulty: "簡單",
-    duration: "12 分鐘",
-    participants: "個人或團體",
-    instructor: "語言治療師公會",
-    props: ["椅子", "水 (潤喉用)"],
-    youtubeId: "ZYgjKHwyA4g",
-    description: "專為銀髮族設計的台語版吞嚥健康操。透過簡單的口腔運動，強化吞嚥肌群，預防吃飯嗆咳，幫助長輩吃得更順暢、營養吸收更好。",
-    steps: [
-      "【頸部放鬆】頭部緩慢前後左右轉動，放鬆頸部肌肉。",
-      "【臉部運動】做誇張的「阿、一、烏、欸、喔」嘴型。",
-      "【舌頭運動】舌頭用力伸出，上下左右移動。",
-      "【發聲練習】練習發出「啪、踏、卡、拉」的聲音，訓練舌頭靈活度。",
-      "【吞嚥練習】最後做一次乾吞嚥動作（吞口水）。"
-    ],
-    safety: [
-      "若長輩頸椎不適，頭部轉動幅度不宜過大。",
-      "過程中若口乾，可適量沾濕嘴唇，但避免大量喝水以免嗆到。",
-      "建議飯前進行，效果更佳。"
-    ],
-    tags: ["預防嗆咳", "口腔運動", "飯前體操"]
-  },
-  {
-    id: 2,
-    title: "益口銅身操 - 預防失能失智",
-    category: "身腦適能",
-    difficulty: "中等",
-    duration: "6 分鐘",
-    participants: "團體",
-    instructor: "健康2.0 / 專家團隊",
-    props: ["無"],
-    youtubeId: "qZ87nEuBR4E",
-    description: "柯文哲醫師推薦！結合口腔動作與肢體協調的「益口銅身操」。不僅強化咀嚼吞嚥能力，還能透過雙手動作刺激腦部，預防肺炎與延緩失智。",
-    steps: [
-      "【叩齒】輕輕叩動上下排牙齒。",
-      "【鼓腮】像吹氣球一樣鼓起臉頰，訓練臉部肌肉。",
-      "【肢體配合】手部配合節奏拍打或做伸展動作。",
-      "【綜合協調】一邊做口腔運動，一邊活動上肢。"
-    ],
-    safety: [
-      "配戴活動假牙者，建議先確認假牙穩固或取下。",
-      "動作需配合呼吸，不要憋氣。",
-      "若手部上舉有困難，可改為平舉或輕鬆擺動即可。"
-    ],
-    tags: ["防肺炎", "大腦活化", "雙重任務訓練"]
-  },
-  {
-    id: 3,
-    title: "五行健康操 - 全身循環",
-    category: "循環促進",
-    difficulty: "簡單",
-    duration: "15 分鐘",
-    participants: "大型團體",
-    instructor: "吳德勝 老師",
-    props: ["寬敞空間"],
-    youtubeId: "RKB4NxhENyY",
-    description: "經典的五行健康操，動作簡單易學，節奏輕快。透過拍打與擺動，促進全身氣血循環，改善末梢血液循環不良，非常適合晨間或活動開場使用。",
-    steps: [
-      "【拍打經絡】雙手握空拳，依序拍打手臂、大腿外側。",
-      "【全身擺動】配合音樂節奏，膝蓋微彎，身體輕鬆左右搖擺。",
-      "【手部畫圓】雙手大動作畫圓，伸展肩關節。",
-      "【調整呼吸】動作結束後，進行深呼吸調息。"
-    ],
-    safety: [
-      "膝蓋微彎有彈性，避免鎖死造成膝蓋壓力。",
-      "拍打力道要適中，避免造成瘀青。",
-      "注意地板平整，避免長者在移動中絆倒。"
-    ],
-    tags: ["氣血循環", "暖身運動", "拍打功"]
-  },
-  {
-    id: 4,
-    title: "高齡者健康操 - 國健署版",
-    category: "肌力訓練",
-    difficulty: "中等",
-    duration: "21 分鐘",
-    participants: "個人或團體",
-    instructor: "衛福部 國健署",
-    props: ["穩固的椅子 (無輪子)"],
-    youtubeId: "_w50TfdCmKU",
-    description: "由國家衛生福利部國民健康署推廣，專為高齡者設計。包含坐姿與站姿兩種版本，安全有效地增進肌力、平衡感與柔軟度，減少跌倒風險。",
-    steps: [
-      "【暖身】原地踏步，肩頸轉動。",
-      "【上肢肌力】雙手推舉、側平舉（可握水瓶增加負重）。",
-      "【下肢肌力】扶椅背深蹲、坐姿抬腿。",
-      "【平衡訓練】單腳站立（需扶扶手）。",
-      "【伸展】全身肌肉靜態伸展。"
-    ],
-    safety: [
-      "務必使用無輪子且靠牆的穩固椅子。",
-      "平衡訓練時，旁邊一定要有可抓握的穩固物體。",
-      "依照體能狀況，隨時可切換為坐姿進行。"
-    ],
-    tags: ["防跌倒", "肌少症", "官方推廣"]
-  },
-  {
-    id: 5,
-    title: "銀髮健康操 - 那魯灣舞曲",
-    category: "音樂律動",
-    difficulty: "簡單",
-    duration: "5 分鐘",
-    participants: "團體活動",
-    instructor: "彰化老人養護中心",
-    props: ["彩球 (選配)"],
-    youtubeId: "pCA8u2KrwTg",
-    description: "搭配耳熟能詳的「那魯灣」原住民風情音樂，動作熱情活潑。主要以手部舞動為主，非常適合輪椅長者參與，能有效提升活動氣氛與情緒愉悅感。",
-    steps: [
-      "【歡呼進場】雙手舉高歡呼，帶動氣氛。",
-      "【波浪舞動】雙手像海浪一樣左右大幅度擺動。",
-      "【拍手節奏】配合音樂重拍拍手。",
-      "【互動環節】與旁邊的夥伴互相手牽手或擊掌。"
-    ],
-    safety: [
-      "輪椅使用者需確認煞車已鎖定。",
-      "肩膀活動受限者，擺動幅度量力而為。",
-      "氣氛熱絡時需注意不要過度激動而前傾跌倒。"
-    ],
-    tags: ["懷舊音樂", "輪椅適用", "康樂活動"]
-  }
-];
-
-// --- 元件：分類標籤 ---
-const CategoryBadge = ({ category }) => {
-  const colors = {
-    "身腦適能": "bg-blue-100 text-blue-800 border-blue-200",
-    "肌力訓練": "bg-green-100 text-green-800 border-green-200",
-    "音樂律動": "bg-purple-100 text-purple-800 border-purple-200",
-    "口腔保健": "bg-rose-100 text-rose-800 border-rose-200", // 新增顏色
-    "循環促進": "bg-orange-100 text-orange-800 border-orange-200", // 新增顏色
-    "default": "bg-gray-100 text-gray-800 border-gray-200"
-  };
-  return (
-    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${colors[category] || colors['default']}`}>
-      {category}
-    </span>
-  );
-};
-
-// --- 元件：難度標籤 ---
-const DifficultyBadge = ({ level }) => {
-  const colors = {
-    "簡單": "text-green-600 bg-green-50",
-    "中等": "text-yellow-600 bg-yellow-50",
-    "困難": "text-red-600 bg-red-50",
-  };
-  return (
-    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${colors[level] || colors['簡單']}`}>
-      {level}
-    </span>
-  );
-};
-
-export default function LessonPlanDatabase() {
-  const [plans, setPlans] = useState(initialLessonPlans);
-  const [selectedPlan, setSelectedPlan] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("全部");
-  const [isAdding, setIsAdding] = useState(false);
-
-  // 提取所有分類
-  const categories = ["全部", ...new Set(plans.map(p => p.category))];
-
-  // 篩選邏輯
-  const filteredPlans = useMemo(() => {
-    return plans.filter(plan => {
-      const matchesSearch = plan.title.includes(searchTerm) || 
-                            plan.description.includes(searchTerm) ||
-                            plan.tags.some(tag => tag.includes(searchTerm));
-      const matchesCategory = selectedCategory === "全部" || plan.category === selectedCategory;
-      return matchesSearch && matchesCategory;
-    });
-  }, [plans, searchTerm, selectedCategory]);
-
-  return (
-    <div className="flex h-screen bg-slate-50 text-slate-800 font-sans overflow-hidden">
-      {/* 側邊導覽列 */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex-col hidden md:flex shadow-sm z-10">
-        <div className="p-6 border-b border-slate-100">
-          <div className="flex items-center gap-2 text-indigo-600 font-bold text-xl">
-            <Activity className="h-7 w-7" />
-            <span>樂齡教案庫</span>
-          </div>
-          <p className="text-xs text-slate-400 mt-2">預防及延緩失能照護方案</p>
-        </div>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教案影片資料庫</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* 自定義滾動條樣式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
         
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          <div className="px-3 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-            教案分類
-          </div>
-          <button
-              onClick={() => setSelectedCategory("全部")}
-              className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
-                selectedCategory === "全部"
-                  ? 'bg-indigo-50 text-indigo-700 shadow-sm' 
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-              }`}
-            >
-              <Home className="h-4 w-4" /> 全部教案
-          </button>
-          {categories.filter(c => c !== "全部").map(cat => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                selectedCategory === cat 
-                  ? 'bg-indigo-50 text-indigo-700 shadow-sm' 
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-              }`}
-            >
-              {cat}
+        /* 簡單的淡入動畫 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 overflow-hidden h-screen flex">
+
+    <!-- 側邊欄 - 影片列表 -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-80 bg-white shadow-xl transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col">
+        <!-- 側邊欄標題 -->
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-emerald-600 text-white shrink-0">
+            <div class="flex items-center space-x-2">
+                <i data-lucide="book-open" class="w-6 h-6"></i>
+                <h1 class="text-xl font-bold">教案資料庫</h1>
+            </div>
+            <button id="close-sidebar" class="md:hidden p-1 hover:bg-emerald-700 rounded">
+                <i data-lucide="x" class="w-6 h-6"></i>
             </button>
-          ))}
-        </nav>
-
-        <div className="p-4 border-t border-slate-100">
-          <div className="bg-gradient-to-br from-rose-400 to-orange-500 rounded-xl p-4 text-white shadow-lg">
-            <p className="font-bold text-sm mb-1 flex items-center gap-1"><Heart className="h-3 w-3 fill-current"/> 運動小叮嚀</p>
-            <p className="text-xs opacity-95 leading-relaxed">
-              觀看影片時，請確認長者身邊有穩固的支撐物，安全第一。
-            </p>
-          </div>
         </div>
-      </aside>
 
-      {/* 主內容區 */}
-      <main className="flex-1 flex flex-col min-w-0">
-        {/* 頂部工具列 */}
-        <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between gap-4 shadow-sm z-10">
-          <div className="flex items-center flex-1 max-w-lg bg-slate-100 rounded-full px-4 py-2.5 focus-within:ring-2 focus-within:ring-indigo-200 transition-all">
-            <Search className="h-5 w-5 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="搜尋教案：如「吞嚥」、「椅子」..." 
-              className="bg-transparent border-none focus:outline-none ml-2 w-full text-sm text-slate-700 placeholder:text-slate-400"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <button 
-            onClick={() => setIsAdding(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-full text-sm font-medium flex items-center gap-2 transition-all shadow-md hover:shadow-lg active:scale-95"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">新增影片</span>
-          </button>
+        <!-- 列表容器 -->
+        <div class="overflow-y-auto flex-1 p-3 space-y-2" id="video-list">
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-2">
+                播放列表 (<span id="video-count">0</span>)
+            </div>
+            <!-- 影片列表項目將由 JS 動態生成 -->
+        </div>
+    </aside>
+
+    <!-- 主要內容區 -->
+    <div class="flex-1 flex flex-col h-full overflow-hidden w-full relative">
+        
+        <!-- 手機版 Header -->
+        <header class="md:hidden h-14 bg-white border-b flex items-center px-4 justify-between shadow-sm z-20 shrink-0">
+            <span class="font-bold text-slate-700 truncate mr-2" id="mobile-current-title">載入中...</span>
+            <button id="open-sidebar" class="p-2 -mr-2 text-slate-600">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
         </header>
 
-        {/* 內容滾動區 */}
-        <div className="flex-1 overflow-y-auto p-6 sm:p-8 custom-scrollbar">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-slate-800">
-              {selectedCategory === "全部" ? "精選教案影片" : `${selectedCategory}`}
-            </h2>
-            <span className="text-sm font-medium text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">
-              共 {filteredPlans.length} 部影片
-            </span>
-          </div>
-
-          {/* 教案 Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredPlans.map(plan => (
-              <div 
-                key={plan.id}
-                onClick={() => setSelectedPlan(plan)}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col h-full overflow-hidden"
-              >
-                {/* 縮圖區塊 */}
-                <div className="relative h-48 bg-slate-200 overflow-hidden">
-                  <img 
-                    src={`https://img.youtube.com/vi/${plan.youtubeId}/hqdefault.jpg`} 
-                    alt={plan.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    onError={(e) => {
-                       e.target.src = "https://via.placeholder.com/640x360?text=Video+Thumbnail";
-                       e.target.style.opacity = 0.5;
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors"></div>
-                  {/* 中央播放按鈕效果 */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="bg-white/90 rounded-full p-3 shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
-                        <Play className="h-6 w-6 text-indigo-600 fill-current ml-1" />
-                    </div>
-                  </div>
-                  <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-2 py-1 rounded flex items-center gap-1 backdrop-blur-sm">
-                    <Youtube className="h-3 w-3 text-red-500 fill-current" /> {plan.duration}
-                  </div>
-                  <div className="absolute top-3 left-3">
-                    <CategoryBadge category={plan.category} />
-                  </div>
-                </div>
+        <!-- 影片播放區域 -->
+        <main class="flex-1 overflow-y-auto bg-slate-100 p-4 md:p-8">
+            <div class="max-w-5xl mx-auto space-y-6">
                 
-                <div className="p-5 flex-1 flex flex-col">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-bold text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors line-clamp-2">
-                      {plan.title}
-                    </h3>
-                  </div>
-                  
-                  <div className="flex items-center gap-3 text-xs text-slate-500 mb-4 mt-1">
-                     <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {plan.instructor}</span>
-                  </div>
-
-                  <p className="text-slate-600 text-sm line-clamp-2 mb-4 flex-1">
-                    {plan.description}
-                  </p>
-                  
-                  <div className="border-t border-slate-100 pt-3 mt-auto flex justify-between items-center">
-                    <DifficultyBadge level={plan.difficulty} />
-                    <span className="text-xs font-medium text-slate-400 group-hover:text-indigo-500 flex items-center gap-1 transition-colors">
-                      觀看教學 <ChevronRight className="h-3 w-3" />
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </main>
-
-      {/* 教案詳情 Modal (含影片播放) */}
-      {selectedPlan && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
-            
-            {/* Modal Header */}
-            <div className="flex justify-between items-center p-4 border-b border-slate-100 bg-white sticky top-0 z-20">
-              <div className="flex items-center gap-3 overflow-hidden">
-                 <h2 className="text-lg sm:text-xl font-bold text-slate-900 truncate">{selectedPlan.title}</h2>
-                 <CategoryBadge category={selectedPlan.category} />
-              </div>
-              <button 
-                onClick={() => setSelectedPlan(null)}
-                className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500 hover:text-slate-800 flex-shrink-0"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50">
-              <div className="grid grid-cols-1 lg:grid-cols-3">
-                
-                {/* 左側：影片播放區 (在桌面版佔較大比例) */}
-                <div className="lg:col-span-2 bg-black sticky top-0 z-10">
-                  <div className="aspect-video w-full relative">
-                    <iframe 
-                      width="100%" 
-                      height="100%" 
-                      src={`https://www.youtube.com/embed/${selectedPlan.youtubeId}?autoplay=1&rel=0`} 
-                      title="YouTube video player" 
-                      frameBorder="0" 
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                      allowFullScreen
-                      className="absolute inset-0"
+                <!-- 播放器容器 -->
+                <div class="bg-black rounded-xl overflow-hidden shadow-2xl aspect-video w-full relative group">
+                    <iframe
+                        id="youtube-player"
+                        class="w-full h-full"
+                        src=""
+                        title="YouTube video player"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen
                     ></iframe>
-                  </div>
-                  
-                  <div className="p-6 bg-white border-b border-slate-100 lg:border-b-0">
-                    <h3 className="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
-                      <BookOpen className="h-5 w-5 text-indigo-500" />
-                      教案簡介
-                    </h3>
-                    <p className="text-slate-600 leading-relaxed text-sm lg:text-base">
-                      {selectedPlan.description}
-                    </p>
-                    
-                    <div className="mt-6 flex flex-wrap gap-2">
-                      {selectedPlan.tags.map(tag => (
-                        <span key={tag} className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium">
-                          <Tag className="h-3 w-3" /> {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
                 </div>
 
-                {/* 右側：詳細資訊 */}
-                <div className="p-6 space-y-6 lg:h-full lg:overflow-y-auto bg-slate-50">
-                  
-                  {/* 基本資訊卡 */}
-                  <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
-                    <div className="flex justify-between border-b border-slate-100 pb-2">
-                       <span className="text-xs text-slate-500">設計者 / 頻道</span>
-                       <span className="text-sm font-medium text-slate-800">{selectedPlan.instructor}</span>
+                <!-- 影片資訊卡 -->
+                <div id="info-card" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 animate-fade-in">
+                    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <span id="video-category" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                                    類別
+                                </span>
+                                <span class="flex items-center text-xs text-slate-500">
+                                    <i data-lucide="clock" class="w-3 h-3 mr-1"></i>
+                                    <span id="video-duration">時間</span>
+                                </span>
+                            </div>
+                            <h2 id="video-title" class="text-2xl font-bold text-slate-900 mb-2">標題</h2>
+                            <p id="video-description" class="text-slate-600 leading-relaxed">
+                                說明文字
+                            </p>
+                        </div>
+                        
+                        <div class="flex-shrink-0 bg-slate-50 p-4 rounded-lg border border-slate-100 min-w-[200px] w-full md:w-auto">
+                            <h4 class="text-sm font-semibold text-slate-700 mb-3 flex items-center">
+                                <i data-lucide="info" class="w-4 h-4 mr-2"></i>
+                                教案資訊
+                            </h4>
+                            <ul class="text-sm text-slate-600 space-y-2">
+                                <li class="flex justify-between">
+                                    <span>適用對象:</span>
+                                    <span class="font-medium text-slate-800">銀髮族/社區</span>
+                                </li>
+                                <li class="flex justify-between">
+                                    <span>強度:</span>
+                                    <span class="font-medium text-slate-800">低 ~ 中</span>
+                                </li>
+                                <li class="flex justify-between">
+                                    <span>場地需求:</span>
+                                    <span class="font-medium text-slate-800">室內平坦處</span>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-2">
-                       <span className="text-xs text-slate-500">建議時長</span>
-                       <span className="text-sm font-medium text-slate-800">{selectedPlan.duration}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-2">
-                       <span className="text-xs text-slate-500">適合對象</span>
-                       <span className="text-sm font-medium text-slate-800">{selectedPlan.participants}</span>
-                    </div>
-                    <div>
-                       <span className="text-xs text-slate-500 block mb-1">準備道具</span>
-                       <div className="flex flex-wrap gap-1">
-                         {selectedPlan.props.map((p, i) => (
-                           <span key={i} className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded border border-indigo-100">{p}</span>
-                         ))}
-                       </div>
-                    </div>
-                  </div>
-
-                  {/* 規則區塊 */}
-                  <div className="space-y-3">
-                    <h4 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
-                      <Activity className="h-4 w-4 text-indigo-500" /> 活動步驟重點
-                    </h4>
-                    <ol className="space-y-3 relative border-l-2 border-indigo-100 ml-2 pl-4">
-                      {selectedPlan.steps.map((step, idx) => (
-                        <li key={idx} className="text-sm text-slate-700 relative">
-                          <span className="absolute -left-[21px] top-0.5 h-2.5 w-2.5 rounded-full bg-indigo-500 border-2 border-white"></span>
-                          {step}
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-
-                  {/* 安全提醒區塊 */}
-                  <div className="bg-rose-50 p-4 rounded-xl border border-rose-100">
-                    <h4 className="font-bold text-rose-800 flex items-center gap-2 mb-2 text-sm">
-                      <ShieldAlert className="h-4 w-4" /> 安全注意事項
-                    </h4>
-                    <ul className="space-y-2">
-                      {selectedPlan.safety.map((item, i) => (
-                        <li key={i} className="text-xs text-rose-700 flex gap-2 leading-relaxed">
-                          <span className="block mt-1.5 w-1 h-1 bg-rose-400 rounded-full flex-shrink-0"></span>
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
                 </div>
-              </div>
+
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* 新增教案 Modal (模擬功能) */}
-      {isAdding && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-           <div className="bg-white rounded-xl w-full max-w-lg p-6 shadow-2xl transform scale-100 transition-all">
-             <div className="flex justify-between items-center mb-6">
-               <h3 className="text-xl font-bold text-slate-900">新增教案影片</h3>
-               <button onClick={() => setIsAdding(false)} className="text-slate-400 hover:text-slate-600"><X /></button>
-             </div>
-             <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); setIsAdding(false); }}>
-               <div>
-                 <label className="block text-sm font-medium text-slate-700 mb-1">教案名稱</label>
-                 <input type="text" className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm" placeholder="例如：椅子瑜珈" />
-               </div>
-               <div>
-                 <label className="block text-sm font-medium text-slate-700 mb-1">YouTube 影片連結</label>
-                 <div className="flex items-center gap-2">
-                   <div className="bg-slate-100 p-2.5 rounded-lg border border-slate-300">
-                      <Youtube className="h-5 w-5 text-red-600" />
-                   </div>
-                   <input type="text" className="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm" placeholder="貼上 YouTube 網址" />
-                 </div>
-               </div>
-               <div className="grid grid-cols-2 gap-4">
-                 <div>
-                   <label className="block text-sm font-medium text-slate-700 mb-1">分類</label>
-                   <select className="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
-                     <option>口腔保健</option>
-                     <option>身腦適能</option>
-                     <option>肌力訓練</option>
-                     <option>音樂律動</option>
-                     <option>循環促進</option>
-                   </select>
-                 </div>
-                 <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">難度</label>
-                    <select className="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
-                      <option>簡單</option>
-                      <option>中等</option>
-                      <option>困難</option>
-                    </select>
-                 </div>
-               </div>
-               <div>
-                 <label className="block text-sm font-medium text-slate-700 mb-1">活動簡介</label>
-                 <textarea className="w-full border border-slate-300 rounded-lg p-2.5 h-24 text-sm resize-none" placeholder="請簡述活動目標與內容..."></textarea>
-               </div>
-               <div className="flex gap-3 mt-6 pt-2">
-                 <button type="button" onClick={() => setIsAdding(false)} className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-50 transition-colors text-sm">取消</button>
-                 <button type="submit" className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-sm text-sm">確認新增</button>
-               </div>
-             </form>
-           </div>
-        </div>
-      )}
+        </main>
     </div>
-  );
-}
+
+    <!-- 遮罩 (手機版側邊欄打開時顯示) -->
+    <div id="overlay" class="fixed inset-0 bg-black/50 z-20 hidden md:hidden glass-effect"></div>
+
+    <script>
+        // 資料數據
+        const videos = [
+            {
+                id: 1,
+                title: "吞嚥健康操 台語版",
+                videoId: "ZYgjKHwyA4g",
+                category: "口腔保健",
+                duration: "約 5 分鐘",
+                description: "透過簡單的口腔運動，幫助長者強化吞嚥肌群，預防嗆咳，適合用餐前進行。",
+                icon: 'activity'
+            },
+            {
+                id: 2,
+                title: "益口銅身操",
+                videoId: "qZ87nEuBR4E",
+                category: "全身運動",
+                duration: "約 10 分鐘",
+                description: "結合口腔與肢體的綜合性健康操，促進血液循環與協調性。",
+                icon: 'heart'
+            },
+            {
+                id: 3,
+                title: "五行健康操",
+                videoId: "RKB4NxhENyY",
+                category: "養生氣功",
+                duration: "約 15 分鐘",
+                description: "傳統五行概念結合現代體操，動作緩和，適合各年齡層進行日常保養。",
+                icon: 'activity'
+            },
+            {
+                id: 4,
+                title: "高齡者健康操",
+                videoId: "_w50TfdCmKU",
+                category: "樂齡運動",
+                duration: "約 12 分鐘",
+                description: "專為高齡者設計的低強度運動，重點在於關節活動度與基礎肌力維持。",
+                icon: 'heart'
+            },
+            {
+                id: 5,
+                title: "那魯灣舞曲",
+                videoId: "pCA8u2KrwTg",
+                category: "律動舞蹈",
+                duration: "約 4 分鐘",
+                description: "輕快活潑的原住民風格舞曲，適合帶動氣氛，增加活動樂趣。",
+                icon: 'music'
+            }
+        ];
+
+        let currentVideoId = videos[0].id;
+
+        // DOM 元素引用
+        const els = {
+            sidebar: document.getElementById('sidebar'),
+            videoList: document.getElementById('video-list'),
+            videoCount: document.getElementById('video-count'),
+            player: document.getElementById('youtube-player'),
+            title: document.getElementById('video-title'),
+            mobileTitle: document.getElementById('mobile-current-title'),
+            desc: document.getElementById('video-description'),
+            category: document.getElementById('video-category'),
+            duration: document.getElementById('video-duration'),
+            infoCard: document.getElementById('info-card'),
+            overlay: document.getElementById('overlay'),
+            openBtn: document.getElementById('open-sidebar'),
+            closeBtn: document.getElementById('close-sidebar')
+        };
+
+        // 初始化
+        function init() {
+            els.videoCount.textContent = videos.length;
+            renderList();
+            loadVideo(videos[0]);
+            
+            // 事件監聽
+            els.openBtn.addEventListener('click', openSidebar);
+            els.closeBtn.addEventListener('click', closeSidebar);
+            els.overlay.addEventListener('click', closeSidebar);
+
+            // 初始化圖示
+            lucide.createIcons();
+        }
+
+        // 渲染列表
+        function renderList() {
+            els.videoList.innerHTML = ''; // 清空列表
+            
+            // 保留標題
+            const headerDiv = document.createElement('div');
+            headerDiv.className = "text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-2";
+            headerDiv.textContent = `播放列表 (${videos.length})`;
+            els.videoList.appendChild(headerDiv);
+
+            videos.forEach(video => {
+                const btn = document.createElement('button');
+                const isSelected = video.id === currentVideoId;
+                
+                btn.className = `
+                    w-full text-left p-3 rounded-lg transition-all duration-200 flex items-start space-x-3 group mb-2
+                    ${isSelected 
+                        ? 'bg-emerald-50 border-l-4 border-emerald-500 shadow-sm' 
+                        : 'hover:bg-slate-100 border-l-4 border-transparent'}
+                `;
+                
+                // 建立按鈕內部 HTML
+                btn.innerHTML = `
+                    <div class="relative flex-shrink-0 mt-1">
+                        <img 
+                            src="https://img.youtube.com/vi/${video.videoId}/default.jpg" 
+                            alt="${video.title}"
+                            class="w-24 h-18 object-cover rounded shadow-sm group-hover:shadow-md transition-shadow"
+                        >
+                        <div class="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 rounded">
+                            ${isSelected ? '<div class="bg-emerald-500 rounded-full p-1"><i data-lucide="play" class="w-3 h-3 text-white fill-current"></i></div>' : ''}
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="font-medium text-sm truncate ${isSelected ? 'text-emerald-800' : 'text-slate-700'}">
+                            ${video.title}
+                        </h3>
+                        <div class="flex items-center mt-1 text-xs text-slate-500 space-x-2">
+                            <span class="bg-slate-200 px-1.5 py-0.5 rounded text-slate-600">${video.category}</span>
+                        </div>
+                    </div>
+                `;
+
+                btn.onclick = () => {
+                    currentVideoId = video.id;
+                    loadVideo(video);
+                    renderList(); // 重新渲染以更新選中狀態樣式
+                    lucide.createIcons(); // 重新生成圖示 (因為 DOM 更新了)
+                    
+                    // 手機版自動收起
+                    if (window.innerWidth < 768) {
+                        closeSidebar();
+                    }
+                };
+
+                els.videoList.appendChild(btn);
+            });
+        }
+
+        // 載入影片內容
+        function loadVideo(video) {
+            // 更新 iframe
+            els.player.src = `https://www.youtube.com/embed/${video.videoId}?autoplay=1&rel=0`;
+            
+            // 更新文字資訊
+            els.title.textContent = video.title;
+            els.mobileTitle.textContent = `目前播放：${video.title}`;
+            els.desc.textContent = video.description;
+            els.category.textContent = video.category;
+            els.duration.textContent = video.duration;
+
+            // 觸發資訊卡的重播動畫
+            els.infoCard.classList.remove('animate-fade-in');
+            void els.infoCard.offsetWidth; // trigger reflow
+            els.infoCard.classList.add('animate-fade-in');
+        }
+
+        // 側邊欄控制
+        function openSidebar() {
+            els.sidebar.classList.remove('-translate-x-full');
+            els.overlay.classList.remove('hidden');
+        }
+
+        function closeSidebar() {
+            els.sidebar.classList.add('-translate-x-full');
+            els.overlay.classList.add('hidden');
+        }
+
+        // 啟動
+        init();
+
+    </script>
+</body>
+</html>
